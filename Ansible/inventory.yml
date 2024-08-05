@@ -1,0 +1,3 @@
+all:
+  hosts: 
+    host1: localhost
