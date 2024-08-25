@@ -1,0 +1,8 @@
+---
+
+- name: check sshd service
+  hosts: localhost
+  connection: local
+  become: true
+  tasks:
+    - name: 
