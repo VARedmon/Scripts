@@ -1,5 +1,5 @@
 {
-    "ansible.python.interpreterPath": "/bin/python",
+    "ansible.python.interpreterPath": "~/.local/share/pipx/venvs/ansible/bin/python",
     "python.testing.pytestArgs": [
         "."
     ],
