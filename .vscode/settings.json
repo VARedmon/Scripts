@@ -1,5 +1,4 @@
 {
-    "ansible.python.interpreterPath": "/bin/python",
     "python.testing.pytestArgs": [
         "."
     ],
