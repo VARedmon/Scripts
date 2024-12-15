@@ -1,4 +1,8 @@
 {
+<<<<<<< HEAD
+=======
+    "ansible.python.interpreterPath": "~/.local/share/pipx/venvs/ansible/bin/python",
+>>>>>>> 5470f59bf0e55790a56ec32bf967459362a5d493
     "python.testing.pytestArgs": [
         "."
     ],
