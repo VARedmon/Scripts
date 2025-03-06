@@ -1,11 +1,18 @@
 ---
 
-- name: Cat the resolv.conf file
+- name: Check DNS servers in resolv.conf
   hosts: localhost
-  connection: local
-  become: true
+  gather_facts: false
+
   tasks:
-    - name: Cat the resolv.conf file
-      ansible.builtin.command:
-        cat /etc/resolv.conf
-...
+    - name: Check resolv.conf exists
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
+      register: resolv_conf
+
+    - name: Check nameservers list in resolv.conf
+      ansible.builtin.debug:
+        msg: "{{ contents }}"
+      vars:
+        contents: "{{ lookup('file', '/etc/resolv.conf') | regex_findall('\\s*nameserver\\s*(.*)') }}"
+      when: resolv_conf.stat.exists
