@@ -8,5 +8,4 @@
     - name: Cat the resolv.conf file
       ansible.builtin.command:
         cat /etc/resolv.conf
-
 ...
