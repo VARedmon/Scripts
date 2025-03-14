@@ -12,7 +12,5 @@
 
     - name: Check nameservers list in resolv.conf
       ansible.builtin.debug:
-        msg: "{{ contents }}"
-      vars:
-        contents: "{{ lookup('file', '/etc/resolv.conf') | regex_findall('\\s*nameserver\\s*(.*)') }}"
-      when: resolv_conf.stat.exists
+        var: resolv_conf
+
