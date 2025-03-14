@@ -6,11 +6,13 @@
 
   tasks:
     - name: Check resolv.conf exists
-      ansible.builtin.stat:
-        path: /etc/resolv.conf
+      ansible.builtin.command:
+        cmd: cat /etc/resolv.conf
       register: resolv_conf
+      changed_when: false
 
     - name: Check nameservers list in resolv.conf
       ansible.builtin.debug:
-        var: resolv_conf
-
+        var: resolv_conf.stdout_lines
+      when: resolv_conf.stdout_lines is defined
+      changed_when: false
