@@ -1,27 +1,32 @@
 variable "filename" {
-  default = "~/test.txt"
-  type = string
-  
+  description = "The output file path."
+  type        = string
+  default     = "~/test.txt"
 }
-variable "file-content" {
-  type = map
+
+variable "file_content" {
+  description = "Map of file content values."
+  type        = map(string)
   default = {
-    "statement1" = "We love pets!"
-    "statement2" = "We love animals!"
+    statement1 = "We love pets!"
+    statement2 = "We love animals!"
   }
 }
+
 variable "prefix" {
-  default = ["Mr", "Mrs", "Sir"]
-  type = list
-
+  description = "Prefix choices for the random pet name."
+  type        = list(string)
+  default     = ["Mr", "Mrs", "Sir"]
 }
+
 variable "separator" {
-  default = "."
-  type = string
-
+  description = "Separator used in the random pet name."
+  type        = string
+  default     = "."
 }
+
 variable "length" {
-  default = "1"
-  type = string
-  
+  description = "Length of the random pet name suffix."
+  type        = number
+  default     = 1
 }

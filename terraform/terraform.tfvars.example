@@ -1,0 +1,10 @@
+filename = "~/test.txt"
+
+file_content = {
+  statement1 = "We love pets!"
+  statement2 = "We love animals!"
+}
+
+prefix = ["Mr", "Mrs", "Sir"]
+separator = "."
+length = 1
