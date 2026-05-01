@@ -1,0 +1,7 @@
+# Ansible project .gitignore
+*.retry
+*.log
+.vscode/
+__pycache__/
+*.pyc
+.DS_Store

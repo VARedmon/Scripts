@@ -1,0 +1,7 @@
+# Ansible project requirements
+# Add roles and collections here if needed
+# Example:
+# collections:
+#   - name: community.general
+# roles:
+#   - name: geerlingguy.apache
