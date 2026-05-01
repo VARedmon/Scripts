@@ -5,43 +5,49 @@ import os
 import shutil
 import sys
 from stat import S_IWUSR
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+LOGGER = logging.getLogger(__name__)
 
 
-def ensure_dir(path):
+def ensure_dir(path: Path) -> None:
     if not path.exists():
-        logging.debug("create folder %s", str(path))
+        LOGGER.debug("create folder %s", path)
         os.makedirs(str(path))
 
 
-def ensure_safe_to_do(src, dest):
+def ensure_safe_to_do(src: Path, dest: Path) -> None:
     if src == dest:
         msg = f"source and destination is the same {src}"
         raise ValueError(msg)
     if not dest.exists():
         return
     if dest.is_dir() and not dest.is_symlink():
-        logging.debug("remove directory %s", dest)
+        LOGGER.debug("remove directory %s", dest)
         safe_delete(dest)
     else:
-        logging.debug("remove file %s", dest)
+        LOGGER.debug("remove file %s", dest)
         dest.unlink()
 
 
-def symlink(src, dest):
+def symlink(src: Path, dest: Path) -> None:
     ensure_safe_to_do(src, dest)
-    logging.debug("symlink %s", _Debug(src, dest))
+    LOGGER.debug("symlink %s", _Debug(src, dest))
     dest.symlink_to(src, target_is_directory=src.is_dir())
 
 
-def copy(src, dest):
+def copy(src: Path, dest: Path) -> None:
     ensure_safe_to_do(src, dest)
     is_dir = src.is_dir()
     method = copytree if is_dir else shutil.copy
-    logging.debug("copy %s", _Debug(src, dest))
+    LOGGER.debug("copy %s", _Debug(src, dest))
     method(str(src), str(dest))
 
 
-def copytree(src, dest):
+def copytree(src: str, dest: str) -> None:
     for root, _, files in os.walk(src):
         dest_dir = os.path.join(dest, os.path.relpath(root, src))
         if not os.path.isdir(dest_dir):
@@ -52,20 +58,22 @@ def copytree(src, dest):
             shutil.copy(src_f, dest_f)
 
 
-def safe_delete(dest):
-    def onerror(func, path, exc_info):  # noqa: ARG001
+def safe_delete(dest: Path) -> None:
+    def onerror(func: object, path: str, exc_info: object) -> None:  # noqa: ARG001
         if not os.access(path, os.W_OK):
             os.chmod(path, S_IWUSR)
-            func(path)
+            func(path)  # ty: ignore[call-non-callable]
         else:
             raise  # noqa: PLE0704
 
-    kwargs = {"onexc" if sys.version_info >= (3, 12) else "onerror": onerror}
-    shutil.rmtree(str(dest), ignore_errors=True, **kwargs)
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(str(dest), ignore_errors=True, onexc=onerror)
+    else:
+        shutil.rmtree(str(dest), ignore_errors=True, onerror=onerror)
 
 
 class _Debug:
-    def __init__(self, src, dest) -> None:
+    def __init__(self, src: Path, dest: Path) -> None:
         self.src = src
         self.dest = dest
 
@@ -78,6 +86,5 @@ __all__ = [
     "copytree",
     "ensure_dir",
     "safe_delete",
-    "symlink",
     "symlink",
 ]

@@ -1,4 +1,4 @@
-#!/home/vinnie/Scripts/bin/python3
+#!/home/varedmon/git_repos/scripts/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

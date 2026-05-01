@@ -33,6 +33,9 @@ Possible errors messages:
     with this rule yet, you might need to temporarily disable this rule using
     a `# noqa: var-naming[no-role-prefix]` comment.
 
+    In all other task types variable names defined in `vars` are considered
+    task-scoped and do not require the role prefix.
+
 ## Settings
 
 This rule behavior can be changed by altering the below settings:
@@ -72,6 +75,6 @@ var_naming_pattern: "^[a-z_][a-z0-9_]*$"
 
 [cop]: https://redhat-cop.github.io/automation-good-practices/#_naming_things
 [var-names]:
-  https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#creating-valid-variable-names
+  https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_variables.html#creating-valid-variable-names
 [magic-vars]:
-  https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html
+  https://docs.ansible.com/projects/ansible/latest/reference_appendices/special_variables.html

@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2013, Hiroaki Nakamura <hnakamur@gmail.com>
@@ -7,7 +6,7 @@
 from __future__ import annotations
 
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
 ---
 module: hostname
 author:
@@ -36,7 +35,7 @@ options:
         description:
             - Which strategy to use to update the hostname.
             - If not set we try to autodetect, but this can be problematic, particularly with containers as they can present misleading information.
-            - Note that 'systemd' should be specified for RHEL/EL/CentOS 7+. Older distributions should use 'redhat'.
+            - Note that V(systemd) should be specified for RHEL/EL/CentOS 7+. Older distributions should use V(redhat).
         choices: ['alpine', 'debian', 'freebsd', 'generic', 'macos', 'macosx', 'darwin', 'openbsd', 'openrc', 'redhat', 'sles', 'solaris', 'systemd']
         type: str
         version_added: '2.9'
@@ -52,9 +51,9 @@ attributes:
         support: full
     platform:
         platforms: posix
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Set a hostname
   ansible.builtin.hostname:
     name: web01
@@ -63,14 +62,12 @@ EXAMPLES = '''
   ansible.builtin.hostname:
     name: web01
     use: systemd
-'''
+"""
 
 import os
 import platform
 import socket
-import traceback
-
-import ansible.module_utils.compat.typing as t
+import typing as t
 
 from ansible.module_utils.basic import (
     AnsibleModule,
@@ -209,17 +206,14 @@ class FileStrategy(BaseStrategy):
             return get_file_content(self.FILE, default='', strip=True)
         except Exception as e:
             self.module.fail_json(
-                msg="failed to read hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+                msg="failed to read hostname: %s" % to_native(e))
 
     def set_permanent_hostname(self, name):
         try:
             with open(self.FILE, 'w+') as f:
                 f.write("%s\n" % name)
         except Exception as e:
-            self.module.fail_json(
-                msg="failed to update hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+            self.module.fail_json(msg="failed to update hostname: %s" % to_native(e))
 
 
 class SLESStrategy(FileStrategy):
@@ -249,8 +243,7 @@ class RedHatStrategy(BaseStrategy):
             )
         except Exception as e:
             self.module.fail_json(
-                msg="failed to read hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+                msg="failed to read hostname: %s" % to_native(e))
 
     def set_permanent_hostname(self, name):
         try:
@@ -269,9 +262,7 @@ class RedHatStrategy(BaseStrategy):
             with open(self.NETWORK_FILE, 'w+') as f:
                 f.writelines(lines)
         except Exception as e:
-            self.module.fail_json(
-                msg="failed to update hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+            self.module.fail_json(msg="failed to update hostname: %s" % to_native(e))
 
 
 class AlpineStrategy(FileStrategy):
@@ -361,9 +352,7 @@ class OpenRCStrategy(BaseStrategy):
                 if line.startswith('hostname='):
                     return line[10:].strip('"')
         except Exception as e:
-            self.module.fail_json(
-                msg="failed to read hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+            self.module.fail_json(msg="failed to read hostname: %s" % to_native(e))
 
     def set_permanent_hostname(self, name):
         try:
@@ -377,9 +366,7 @@ class OpenRCStrategy(BaseStrategy):
             with open(self.FILE, 'w') as f:
                 f.write('\n'.join(lines) + '\n')
         except Exception as e:
-            self.module.fail_json(
-                msg="failed to update hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+            self.module.fail_json(msg="failed to update hostname: %s" % to_native(e))
 
 
 class OpenBSDStrategy(FileStrategy):
@@ -481,9 +468,7 @@ class FreeBSDStrategy(BaseStrategy):
                 if line.startswith('hostname='):
                     return line[10:].strip('"')
         except Exception as e:
-            self.module.fail_json(
-                msg="failed to read hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+            self.module.fail_json(msg="failed to read hostname: %s" % to_native(e))
 
     def set_permanent_hostname(self, name):
         try:
@@ -500,9 +485,7 @@ class FreeBSDStrategy(BaseStrategy):
             with open(self.FILE, 'w') as f:
                 f.write('\n'.join(lines) + '\n')
         except Exception as e:
-            self.module.fail_json(
-                msg="failed to update hostname: %s" % to_native(e),
-                exception=traceback.format_exc())
+            self.module.fail_json(msg="failed to update hostname: %s" % to_native(e))
 
 
 class DarwinStrategy(BaseStrategy):
@@ -516,7 +499,7 @@ class DarwinStrategy(BaseStrategy):
     However, macOS also has LocalHostName and ComputerName settings.
     LocalHostName controls the Bonjour/ZeroConf name, used by services
     like AirDrop. This class implements a method, _scrub_hostname(), that mimics
-    the transformations macOS makes on hostnames when enterened in the Sharing
+    the transformations macOS makes on hostnames when entered in the Sharing
     preference pane. It replaces spaces with dashes and removes all special
     characters.
 
@@ -625,8 +608,8 @@ class Hostname(object):
         self.use = module.params['use']
 
         if self.use is not None:
-            strat = globals()['%sStrategy' % STRATS[self.use]]
-            self.strategy = strat(module)
+            strategy = globals()['%sStrategy' % STRATS[self.use]]
+            self.strategy = strategy(module)
         elif platform.system() == 'Linux' and ServiceMgrFactCollector.is_systemd_managed(module):
             # This is Linux and systemd is active
             self.strategy = SystemdStrategy(module)
@@ -886,8 +869,6 @@ def main():
 
     if name != current_hostname:
         name_before = current_hostname
-    elif name != permanent_hostname:
-        name_before = permanent_hostname
     else:
         name_before = permanent_hostname
 

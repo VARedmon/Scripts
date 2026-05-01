@@ -1,17 +1,13 @@
 """Ansible specific pylint plugin for checking format string usage."""
+
 # (c) 2018, Matt Martz <matt@sivel.net>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import astroid
-
-# support pylint 2.x and 3.x -- remove when supporting only 3.x
-try:
-    from pylint.interfaces import IAstroidChecker
-except ImportError:
-    class IAstroidChecker:
-        """Backwards compatibility for 2.x / 3.x support."""
+import astroid.bases
+import astroid.exceptions
+import astroid.nodes
 
 try:
     from pylint.checkers.utils import check_messages
@@ -38,7 +34,6 @@ class AnsibleStringFormatChecker(BaseChecker):
     is valid and the arguments match the format string.
     """
 
-    __implements__ = (IAstroidChecker,)
     name = 'string'
     msgs = MSGS
 
@@ -46,22 +41,22 @@ class AnsibleStringFormatChecker(BaseChecker):
     def visit_call(self, node):
         """Visit a call node."""
         func = utils.safe_infer(node.func)
-        if (isinstance(func, astroid.BoundMethod)
-                and isinstance(func.bound, astroid.Instance)
+        if (isinstance(func, astroid.bases.BoundMethod)
+                and isinstance(func.bound, astroid.bases.Instance)
                 and func.bound.name in ('str', 'unicode', 'bytes')):
             if func.name == 'format':
                 self._check_new_format(node, func)
 
     def _check_new_format(self, node, func):
         """ Check the new string formatting """
-        if (isinstance(node.func, astroid.Attribute)
-                and not isinstance(node.func.expr, astroid.Const)):
+        if (isinstance(node.func, astroid.nodes.Attribute)
+                and not isinstance(node.func.expr, astroid.nodes.Const)):
             return
         try:
             strnode = next(func.bound.infer())
-        except astroid.InferenceError:
+        except astroid.exceptions.InferenceError:
             return
-        if not isinstance(strnode, astroid.Const):
+        if not isinstance(strnode, astroid.nodes.Const):
             return
 
         if isinstance(strnode.value, bytes):

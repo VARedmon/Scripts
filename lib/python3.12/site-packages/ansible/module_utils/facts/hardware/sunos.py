@@ -18,12 +18,13 @@ from __future__ import annotations
 import re
 import time
 
+from functools import reduce
+
 from ansible.module_utils.common.locale import get_best_parsable_locale
 from ansible.module_utils.common.text.formatters import bytes_to_human
 from ansible.module_utils.facts.utils import get_file_content, get_mount_size
 from ansible.module_utils.facts.hardware.base import Hardware, HardwareCollector
 from ansible.module_utils.facts import timeout
-from ansible.module_utils.six.moves import reduce
 
 
 class SunOSHardware(Hardware):
@@ -172,7 +173,13 @@ class SunOSHardware(Hardware):
         rc, platform, err = self.module.run_command('/usr/bin/uname -i')
         platform_sbin = '/usr/platform/' + platform.rstrip() + '/sbin'
 
-        prtdiag_path = self.module.get_bin_path("prtdiag", opt_dirs=[platform_sbin])
+        prtdiag_path = self.module.get_bin_path(
+            "prtdiag",
+            opt_dirs=[platform_sbin]
+        )
+        if prtdiag_path is None:
+            return dmi_facts
+
         rc, out, err = self.module.run_command(prtdiag_path)
         # rc returns 1
         if out:

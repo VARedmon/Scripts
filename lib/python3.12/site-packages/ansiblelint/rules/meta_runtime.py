@@ -28,7 +28,7 @@ class CheckRequiresAnsibleVersion(AnsibleLintRule):
     )
     severity = "VERY_HIGH"
     tags = ["metadata"]
-    version_added = "v6.11.0 (last update)"
+    version_changed = "6.11.0"
 
     _ids = {
         "meta-runtime[unsupported-version]": "'requires_ansible' key must refer to a currently supported version",
@@ -46,7 +46,9 @@ class CheckRequiresAnsibleVersion(AnsibleLintRule):
         if file.kind != "meta-runtime":
             return []
 
-        requires_ansible = file.data.get("requires_ansible", None)
+        requires_ansible = None
+        if file.data and isinstance(file.data, dict):
+            requires_ansible = file.data.get("requires_ansible", None)
 
         if requires_ansible:
             if self.options and not any(

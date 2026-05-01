@@ -30,10 +30,9 @@ class ActionModule(ActionBase):
 
         if module in {'yum', 'auto'}:
             try:
-                if self._task.delegate_to:  # if we delegate, we should use delegated host's facts
-                    module = self._templar.template("{{hostvars['%s']['ansible_facts']['pkg_mgr']}}" % self._task.delegate_to)
-                else:
-                    module = self._templar.template("{{ansible_facts.pkg_mgr}}")
+                # if we delegate, we should use delegated host's facts
+                expr = "hostvars[delegate_to].ansible_facts.pkg_mgr" if self._task.delegate_to else "ansible_facts.pkg_mgr"
+                module = self._templar.resolve_variable_expression(expr, local_variables=dict(delegate_to=self._task.delegate_to))
             except Exception:
                 pass  # could not get it from template!
 
@@ -41,6 +40,13 @@ class ActionModule(ActionBase):
             facts = self._execute_module(
                 module_name="ansible.legacy.setup", module_args=dict(filter="ansible_pkg_mgr", gather_subset="!all"),
                 task_vars=task_vars)
+
+            if facts.get("failed", False):
+                raise AnsibleActionFail(
+                    f"Failed to fetch ansible_pkg_mgr to determine the dnf action backend: {facts.get('msg')}",
+                    result=facts,
+                )
+
             display.debug("Facts %s" % facts)
             module = facts.get("ansible_facts", {}).get("ansible_pkg_mgr", "auto")
             if (not self._task.delegate_to or self._task.delegate_facts) and module != 'auto':
@@ -74,10 +80,5 @@ class ActionModule(ActionBase):
                 display.vvvv("Running %s as the backend for the dnf action plugin" % module)
                 result.update(self._execute_module(
                     module_name=module, module_args=new_module_args, task_vars=task_vars, wrap_async=self._task.async_val))
-
-        # Cleanup
-        if not self._task.async_val:
-            # remove a temporary path we created
-            self._remove_tmp_path(self._connection._shell.tmpdir)
 
         return result

@@ -1,6 +1,8 @@
 """Support code for working with Azure Pipelines."""
+
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import uuid
@@ -26,13 +28,15 @@ from ..http import (
 
 from ..util import (
     display,
+    ApplicationError,
     MissingEnvironmentVariable,
 )
 
 from . import (
+    AuthContext,
     ChangeDetectionNotSupported,
     CIProvider,
-    CryptographyAuthHelper,
+    GeneratingAuthHelper,
 )
 
 CODE = 'azp'
@@ -111,10 +115,11 @@ class AzurePipelines(CIProvider):
         """Return True if Ansible Core CI is supported."""
         return True
 
-    def prepare_core_ci_auth(self) -> dict[str, t.Any]:
-        """Return authentication details for Ansible Core CI."""
+    def prepare_core_ci_request(self, config: dict[str, object], context: AuthContext) -> dict[str, object]:
         try:
-            request = dict(
+            request: dict[str, object] = dict(
+                type="azp:ssh",
+                config=config,
                 org_name=os.environ['SYSTEM_COLLECTIONURI'].strip('/').split('/')[-1],
                 project_name=os.environ['SYSTEM_TEAMPROJECT'],
                 build_id=int(os.environ['BUILD_BUILDID']),
@@ -123,13 +128,9 @@ class AzurePipelines(CIProvider):
         except KeyError as ex:
             raise MissingEnvironmentVariable(name=ex.args[0]) from None
 
-        self.auth.sign_request(request)
+        self.auth.sign_request(request, context)
 
-        auth = dict(
-            azp=request,
-        )
-
-        return auth
+        return request
 
     def get_git_details(self, args: CommonConfig) -> t.Optional[dict[str, t.Any]]:
         """Return details about git in the current environment."""
@@ -143,14 +144,14 @@ class AzurePipelines(CIProvider):
         return details
 
 
-class AzurePipelinesAuthHelper(CryptographyAuthHelper):
-    """
-    Authentication helper for Azure Pipelines.
-    Based on cryptography since it is provided by the default Azure Pipelines environment.
-    """
+class AzurePipelinesAuthHelper(GeneratingAuthHelper):
+    """Authentication helper for Azure Pipelines."""
 
-    def publish_public_key(self, public_key_pem: str) -> None:
-        """Publish the given public key."""
+    def generate_key_pair(self) -> None:
+        super().generate_key_pair()
+
+        public_key_pem = self.public_key_file.read_text()
+
         try:
             agent_temp_directory = os.environ['AGENT_TEMPDIRECTORY']
         except KeyError as ex:
@@ -221,7 +222,20 @@ class AzurePipelinesChanges:
             self.diff = []
 
     def get_successful_merge_run_commits(self) -> set[str]:
-        """Return a set of recent successsful merge commits from Azure Pipelines."""
+        """
+        Return a set of recent successful merge commits from Azure Pipelines.
+        A warning will be displayed and no commits returned if an error occurs.
+        """
+        try:
+            commits = self._get_successful_merge_run_commits()
+        except ApplicationError as ex:
+            commits = set()
+            display.warning(f'Cannot determine changes. All tests will be executed. Reason: {ex}')
+
+        return commits
+
+    def _get_successful_merge_run_commits(self) -> set[str]:
+        """Return a set of recent successful merge commits from Azure Pipelines."""
         parameters = dict(
             maxBuildsPerDefinition=100,  # max 5000
             queryOrder='queueTimeDescending',  # assumes under normal circumstances that later queued jobs are for later commits
@@ -231,20 +245,29 @@ class AzurePipelinesChanges:
             repositoryId='%s/%s' % (self.org, self.project),
         )
 
-        url = '%s%s/_apis/build/builds?api-version=6.0&%s' % (self.org_uri, self.project, urllib.parse.urlencode(parameters))
+        url = '%s%s/_apis/build/builds?api-version=7.1&%s' % (self.org_uri, self.project, urllib.parse.urlencode(parameters))
 
         http = HttpClient(self.args, always=True)
         response = http.get(url)
 
-        # noinspection PyBroadException
         try:
-            result = response.json()
-        except Exception:  # pylint: disable=broad-except
-            # most likely due to a private project, which returns an HTTP 203 response with HTML
-            display.warning('Unable to find project. Cannot determine changes. All tests will be executed.')
-            return set()
+            result = json.loads(response.response)
+            result_type = 'JSON'
+        except json.JSONDecodeError:
+            result = ...
+            result_type = 'Non-JSON'
 
-        commits = set(build['sourceVersion'] for build in result['value'])
+        result_description = f'HTTP {response.status_code} {result_type} result'
+
+        if response.status_code != 200 or result is ...:
+            raise ApplicationError(f'Unable to find project due to {result_description}.')
+
+        try:
+            commits = {build['sourceVersion'] for build in result['value']}
+        except KeyError as ex:
+            raise ApplicationError(f'Missing {ex.args[0]!r} key in response from {result_description}.') from ex
+        except (ValueError, TypeError) as ex:
+            raise ApplicationError(f'Unexpected response format from {result_description}: {ex}') from ex
 
         return commits
 

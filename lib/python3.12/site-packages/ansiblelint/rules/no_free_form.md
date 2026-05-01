@@ -1,7 +1,7 @@
 # no-free-form
 
 This rule identifies any use of
-[free-form](https://docs.ansible.com/ansible/2.7/user_guide/playbooks_intro.html#action-shorthand)
+[free-form](https://docs.ansible.com/projects/ansible/latest/index.html#action-shorthand)
 module calling syntax and asks for switching to the full syntax.
 
 **Free-form** syntax, also known as **inline** or **shorthand**, can produce
@@ -32,7 +32,7 @@ This rule can produce messages as:
 - name: Example with discouraged free-form syntax
   hosts: localhost
   tasks:
-    - name: Create a placefolder file
+    - name: Create a placeholder file
       ansible.builtin.command: chdir=/tmp touch foo # <-- don't use free-form
     - name: Use raw to echo
       ansible.builtin.raw: executable=/bin/bash echo foo # <-- don't use executable=
@@ -46,7 +46,7 @@ This rule can produce messages as:
 - name: Example that avoids free-form syntax
   hosts: localhost
   tasks:
-    - name: Create a placefolder file
+    - name: Create a placeholder file
       ansible.builtin.command:
         cmd: touch foo # <-- ansible will not touch it
         chdir: /tmp

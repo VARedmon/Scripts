@@ -16,8 +16,8 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from ansible.errors import AnsibleAction, AnsibleActionFail
-from ansible.executor.module_common import get_action_args_with_defaults
+from ansible.errors import AnsibleActionFail
+from ansible.executor.module_common import _apply_action_arg_defaults
 from ansible.module_utils.facts.system.pkg_mgr import PKG_MGRS
 from ansible.plugins.action import ActionBase
 from ansible.utils.display import Display
@@ -33,12 +33,12 @@ class ActionModule(ActionBase):
     BUILTIN_PKG_MGR_MODULES = {manager['name'] for manager in PKG_MGRS}
 
     def run(self, tmp=None, task_vars=None):
-        ''' handler for package operations '''
+        """ handler for package operations """
 
         self._supports_check_mode = True
         self._supports_async = True
 
-        result = super(ActionModule, self).run(tmp, task_vars)
+        super(ActionModule, self).run(tmp, task_vars)
 
         module = self._task.args.get('use', 'auto')
 
@@ -68,6 +68,11 @@ class ActionModule(ActionBase):
                             module_args=dict(filter='ansible_pkg_mgr', gather_subset='!all'),
                             task_vars=task_vars,
                         )
+                        if facts.get("failed", False):
+                            raise AnsibleActionFail(
+                                f"Failed to fetch ansible_pkg_mgr to determine the package action backend: {facts.get('msg')}",
+                                result=facts,
+                            )
                         pmgr = 'ansible_pkg_mgr'
 
                     try:
@@ -87,25 +92,15 @@ class ActionModule(ActionBase):
 
                     # get defaults for specific module
                     context = self._shared_loader_obj.module_loader.find_plugin_with_context(module, collection_list=self._task.collections)
-                    new_module_args = get_action_args_with_defaults(
-                        context.resolved_fqcn, new_module_args, self._task.module_defaults, self._templar,
-                        action_groups=self._task._parent._play._action_groups
-                    )
+                    new_module_args = _apply_action_arg_defaults(context.resolved_fqcn, self._task, new_module_args, self._templar)
 
                     if module in self.BUILTIN_PKG_MGR_MODULES:
                         # prefix with ansible.legacy to eliminate external collisions while still allowing library/ override
                         module = 'ansible.legacy.' + module
 
                     display.vvvv("Running %s" % module)
-                    result.update(self._execute_module(module_name=module, module_args=new_module_args, task_vars=task_vars, wrap_async=self._task.async_val))
+                    return self._execute_module(module_name=module, module_args=new_module_args, task_vars=task_vars, wrap_async=self._task.async_val)
             else:
                 raise AnsibleActionFail('Could not detect which package manager to use. Try gathering facts or setting the "use" option.')
-
-        except AnsibleAction as e:
-            result.update(e.result)
         finally:
-            if not self._task.async_val:
-                # remove a temporary path we created
-                self._remove_tmp_path(self._connection._shell.tmpdir)
-
-        return result
+            pass  # avoid de-dent all on refactor

@@ -1,4 +1,5 @@
 """Python requirements management"""
+
 from __future__ import annotations
 
 import base64
@@ -53,6 +54,11 @@ from .connections import (
 from .coverage_util import (
     get_coverage_version,
 )
+
+if t.TYPE_CHECKING:
+    from .host_profiles import (
+        HostProfile,
+    )
 
 QUIET_PIP_SCRIPT_PATH = os.path.join(ANSIBLE_TEST_TARGET_ROOT, 'setup', 'quiet_pip.py')
 REQUIREMENTS_SCRIPT_PATH = os.path.join(ANSIBLE_TEST_TARGET_ROOT, 'setup', 'requirements.py')
@@ -112,6 +118,8 @@ class PipBootstrap(PipCommand):
 
     pip_version: str
     packages: list[str]
+    setuptools: bool
+    wheel: bool
 
 
 # Entry Points
@@ -119,6 +127,7 @@ class PipBootstrap(PipCommand):
 
 def install_requirements(
     args: EnvironmentConfig,
+    host_profile: HostProfile | None,
     python: PythonConfig,
     ansible: bool = False,
     command: bool = False,
@@ -130,6 +139,7 @@ def install_requirements(
     create_result_directories(args)
 
     if not requirements_allowed(args, controller):
+        post_install(host_profile)
         return
 
     if command and isinstance(args, (UnitsConfig, IntegrationConfig)) and args.coverage:
@@ -158,7 +168,17 @@ def install_requirements(
         sanity=None,
     )
 
+    from .host_profiles import DebuggableProfile
+
+    if isinstance(host_profile, DebuggableProfile) and host_profile.debugger and host_profile.debugger.get_python_package():
+        commands.append(PipInstall(
+            requirements=[],
+            constraints=[],
+            packages=[host_profile.debugger.get_python_package()],
+        ))
+
     if not commands:
+        post_install(host_profile)
         return
 
     run_pip(args, python, commands, connection)
@@ -166,6 +186,16 @@ def install_requirements(
     # false positive: pylint: disable=no-member
     if any(isinstance(command, PipInstall) and command.has_package('pyyaml') for command in commands):
         check_pyyaml(python)
+
+    post_install(host_profile)
+
+
+def post_install(host_profile: HostProfile) -> None:
+    """Operations to perform after requirements are installed."""
+    from .host_profiles import DebuggableProfile
+
+    if isinstance(host_profile, DebuggableProfile):
+        host_profile.activate_debugger()
 
 
 def collect_bootstrap(python: PythonConfig) -> list[PipCommand]:
@@ -177,6 +207,8 @@ def collect_bootstrap(python: PythonConfig) -> list[PipCommand]:
     bootstrap = PipBootstrap(
         pip_version=pip_version,
         packages=packages,
+        setuptools=False,
+        wheel=False,
     )
 
     return [bootstrap]
@@ -217,17 +249,6 @@ def collect_requirements(
         # most infrastructure packages can be removed from sanity test virtual environments after they've been created
         # removing them reduces the size of environments cached in containers
         uninstall_packages = list(get_venv_packages(python))
-
-        if not minimize:
-            # installed packages may have run-time dependencies on setuptools
-            uninstall_packages.remove('setuptools')
-
-        # hack to allow the package-data sanity test to keep wheel in the venv
-        install_commands = [command for command in commands if isinstance(command, PipInstall)]
-        install_wheel = any(install.has_package('wheel') for install in install_commands)
-
-        if install_wheel:
-            uninstall_packages.remove('wheel')
 
         commands.extend(collect_uninstall(packages=uninstall_packages))
 
@@ -412,9 +433,7 @@ def get_venv_packages(python: PythonConfig) -> dict[str, str]:
     #       See: https://github.com/ansible/base-test-container/blob/main/files/installer.py
 
     default_packages = dict(
-        pip='23.1.2',
-        setuptools='67.7.2',
-        wheel='0.37.1',
+        pip='25.2',
     )
 
     override_packages: dict[str, dict[str, str]] = {
