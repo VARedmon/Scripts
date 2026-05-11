@@ -3,6 +3,8 @@
     "python.terminal.executeInFileDir": true,
     "python.linting.enabled": true,
     "ansible.python.interpreterPath": "~/.local/share/pipx/venvs/ansible/bin/python",
+    "ansibleLint.enabled": true,
+    "ansibleLint.executablePath": "/home/vinnie/.local/share/pipx/venvs/ansible/bin/ansible-lint",
     "python.testing.pytestArgs": [
         "."
     ],
