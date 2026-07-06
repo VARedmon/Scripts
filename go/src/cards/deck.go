@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Create a new type of 'deck' which is a slice of strings
+// Create a new type of 'deck'
 // which is a slice of strings that represents a deck of cards
 type deck []string
 
