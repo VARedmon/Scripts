@@ -1,6 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+	"os"
+	"strings"
+	"time"
+)
 
 // Create a new type of 'deck' which is a slice of strings
 // which is a slice of strings that represents a deck of cards
@@ -25,5 +31,39 @@ func newDeck() deck {
 func (d deck) print() {
 	for i, card := range d {
 		fmt.Println(i, card)
+	}
+}
+
+func deal(d deck, handSize int) (deck, deck) {
+	return d[:handSize], d[handSize:]
+}
+
+func (d deck) toString() string {
+	return strings.Join([]string(d), ",")
+}
+
+func (d deck) saveToFile(filename string) error {
+	return os.WriteFile(filename, []byte(d.toString()), 0666)
+}
+
+func newDeckFromFile(filename string) deck {
+	bs, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	s := strings.Split(string(bs), ",")
+	return deck(s)
+}
+
+func (d *deck) shuffle() {
+	shuffleWithRand(d, rand.New(rand.NewSource(time.Now().UnixNano())))
+}
+
+func shuffleWithRand(d *deck, r *rand.Rand) {
+	for i := len(*d) - 1; i > 0; i-- {
+		j := r.Intn(i + 1)
+		(*d)[i], (*d)[j] = (*d)[j], (*d)[i]
 	}
 }
