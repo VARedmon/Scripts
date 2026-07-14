@@ -1,0 +1,21 @@
+---
+- name: Deploy Root CA certificate to Windows 10 hosts
+  hosts: windows_10
+
+  tasks:
+    - name: Copy Root CA certificate to Windows Temp directory
+      win_copy:
+        src: certs/demo-cert.pem
+        dest: C:\Windows\temp\demo-cert.pem
+
+    - name: Import Root CA certificate to Root Certificate Store
+      win_certificate_store:
+        path: C:\Windows\temp\demo-cert.pem
+        store_name: Root
+        state: present
+        file_type: pem
+
+    - name: Remove Root CA certificate from Windows Temp directory
+      win_file:
+        path: C:\Windows\temp\demo-cert.pem
+        state: absent

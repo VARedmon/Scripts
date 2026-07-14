@@ -1,0 +1,38 @@
+---
+- name: Configure apache and create HTML page
+  hosts: ubuntu_vms
+  become: yes
+
+  tasks:
+    - name: Change apache port
+      lineinfile:
+        path: /etc/apache2/ports.conf
+        regexp: '^Listen 80'
+        line: 'Listen 8080'
+      notify: Restart apache
+
+    - name: Delete HTML file
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Set HTML file content
+      blockinfile:
+        create: true
+        path: /var/www/html/index.html
+        block: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Hello World</title>
+          </head>
+          <body>
+            <h1>Hello, World!</h1>
+          </body>
+          </html>
+
+  handlers:
+    - name: Restart apache
+      service:
+        name: apache2
+        state: restarted

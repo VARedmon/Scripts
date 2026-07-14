@@ -1,0 +1,17 @@
+---
+- name: Enable apt unattended-upgrades
+  hosts: ubuntu_vms
+  become: true
+
+  tasks:
+    - name: Install apt unattended-upgrades
+      package:
+        name: unattended-upgrades
+        state: present
+        update_cache: yes
+
+    - name: Ensure unattended-upgrades service is started and enabled
+      service:
+        name: unattended-upgrades
+        state: started
+        enabled: yes

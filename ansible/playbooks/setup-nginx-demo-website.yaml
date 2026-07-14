@@ -1,0 +1,23 @@
+---
+- name: Install nginx and deploy demo website
+  hosts: ubuntu_vms
+  become: true
+
+  tasks:
+    - name: Install nginx
+      package:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Deploy index.html
+      copy:
+        src: static/index.html
+        dest: /var/www/html/index.html
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded

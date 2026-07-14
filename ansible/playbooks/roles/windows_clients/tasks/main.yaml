@@ -1,0 +1,15 @@
+- name: Download Notepad++ installer
+  win_get_url:
+    url: "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6/npp.8.6.Installer.x64.exe"
+    dest: "C:\\Windows\\Temp\\npp_installer.exe"
+
+- name: Install Notepad++ silently
+  win_package:
+    path: "C:\\Windows\\Temp\\npp_installer.exe"
+    arguments: "/S"
+    state: present
+
+- name: Delete Notepad++ installer
+  win_file:
+    path: "C:\\Windows\\Temp\\npp_installer.exe"
+    state: absent

@@ -1,0 +1,22 @@
+---
+- name: Windows Modules Demo
+  hosts: windows_10
+  tasks:
+    - name: Change Computer Name
+      win_hostname:
+        name: ansible-testhost-01
+
+    - name: Change Windows Apps and Settings to Dark Mode
+      win_regedit:
+        path: HKCU:\Software\Microsoft\Windows\Themes\Personalize
+        name: "AppsUseLightTheme"
+        data: 0
+        type: dword
+
+    - name: Inform User About Reboot
+      win_toast:
+        msg: "This machine will reboot in 60 seconds."
+        timeout: 60
+
+    - name: Reboot the Machine
+      win_reboot:

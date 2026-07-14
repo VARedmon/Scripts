@@ -1,0 +1,24 @@
+---
+- name: Install MySQL server and set root password
+  hosts: ubuntu_vms
+  become: true
+
+  vars:
+    mysql_root_password: "ePFRk-gdQXsSyHSIl4RU"
+
+  tasks:
+    - name: Install MySQL server
+      package:
+        name: mysql-server
+        state: present
+
+    - name: Install ansible python3 mysql dependency
+      package:
+        name: python3-mysqldb
+        state: present    
+
+    - name: Set MySQL root password
+      mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        check_implicit_admin: true

@@ -6,13 +6,12 @@
 
   tasks:
     - name: Check resolv.conf exists
-      ansible.builtin.command:
-        cmd: cat /etc/resolv.conf
+      ansible.builtin.stat:
+        path: /etc/resolv.conf
       register: resolv_conf
-      changed_when: false
-
     - name: Check nameservers list in resolv.conf
       ansible.builtin.debug:
-        var: resolv_conf.stdout_lines
-      when: resolv_conf.stdout_lines is defined
-      changed_when: false
+        msg: "{{ contents }}"
+      vars:
+        contents: "{{ lookup('file', '/etc/resolv.conf') | regex_findall('\\s*nameserver\\s*(.*)') }}"
+      when: resolv_conf.stat.exists

@@ -1,0 +1,5 @@
+- name: Install apache webserver
+  package:
+    name: "apache2"
+    update_cache: yes
+    state: present

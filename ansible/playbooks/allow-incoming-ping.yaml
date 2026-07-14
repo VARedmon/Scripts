@@ -1,0 +1,15 @@
+---
+- name: Allow Incoming ICMPv4 Echo Requests (Ping)
+  hosts: windows_10
+  tasks:
+    - name: Allow Incoming ICMPv4 Echo Requests (Ping)
+      win_firewall_rule:
+        name: "Allow Incoming ICMPv4 Echo Requests (Ping)"
+        enabled: yes
+        state: present
+        profiles: "domain,private,public"
+        action: allow
+        direction: in
+        protocol: icmpv4
+        icmp_type_code:
+          - '8:*'

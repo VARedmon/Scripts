@@ -1,0 +1,18 @@
+---
+- name: Install VLC media player
+  hosts: windows_10
+  tasks:
+    - name: Copy VLC.msi to C:\Windows\Temp
+      win_copy:
+        src: "binary/vlc.msi"
+        dest: "C:\\Windows\\Temp\\vlc.msi"
+
+    - name: Install VLC media player
+      win_package:
+        path: "C:\\Windows\\Temp\\vlc.msi"
+        state: present
+
+    - name: Delete VLC Installer
+      win_file:
+        path: "C:\\Windows\\Temp\\vlc.msi"
+        state: absent

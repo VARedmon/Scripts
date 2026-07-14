@@ -1,0 +1,19 @@
+---
+- name: Install tree
+  hosts: ubuntu_vms
+
+  vars:
+    package_name: tree
+
+  tasks:
+    - name: Install tree
+      package:
+        name: "{{ package_name }}"
+        state: present
+        update_cache: yes
+      become: yes
+      register: install_output
+
+    - name: Print Package installation output
+      debug:
+        var: install_output

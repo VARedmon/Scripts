@@ -1,0 +1,11 @@
+---
+- name: Upgrade Ubuntu VMs
+  hosts: ubuntu_vms
+  become: true
+
+  tasks:
+  - name: Update apt package cache and upgrade all packages
+    ansible.builtin.apt:
+      name: "*"
+      update_cache: yes
+      state: latest

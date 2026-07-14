@@ -1,0 +1,12 @@
+---
+- name: Install git using chocolatey
+  hosts: windows_10
+  gather_facts: no
+  tasks:
+    - name: Ensure Chocolatey itself is installed, using community repo for the bootstrap
+      win_chocolatey:
+        name: chocolatey
+    - name: Install git
+      win_chocolatey:
+        name: git
+        state: present

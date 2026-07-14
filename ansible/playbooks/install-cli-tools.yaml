@@ -1,0 +1,24 @@
+---
+- name: Install CLI Tools
+  hosts: ubuntu_vms
+
+  vars:
+    cli_tools:
+      - curl
+      - wget
+      - tree
+      - tmux
+      - screen
+      - ntfs-3g
+      - htop
+      - unzip
+      - traceroute
+
+  tasks:
+    - name: Install CLI Tools
+      package:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      become: yes
+      with_items: "{{ cli_tools }}"

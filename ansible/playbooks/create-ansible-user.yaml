@@ -1,0 +1,18 @@
+---
+- name: Create local user account and authorize SSH key
+  hosts: ubuntu_vms
+  become: true
+
+  tasks:
+    - name: Create local user account
+      user:
+        name: ansible
+        shell: /bin/bash
+        #mkpasswd --method=sha-512
+        password: '$6$viXTy7kLvm/aanX/$X1/1qaVn8TUv3Eyocu3xm0ckT6Tte4DS1zjeRg9Ju7vX1g5tNWEVLcKN2zTS2L0JJBwLCZvo4BxtON7Ai5Hox/'
+        groups: sudo
+
+    - name: Add SSH public key for the user to the "authorized_keys" file
+      authorized_key:
+        user: ansible
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB0KbVAsV7dlBt+s7o0KK4J5LFfW1WjOfRk9LZuo/j5m rec@notebook"
