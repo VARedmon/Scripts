@@ -1,6 +1,6 @@
 ---
 - name: Install apache webserver
-  hosts: ubuntu_vms
+  hosts: ubuntu
   become: true
 
   tasks:
